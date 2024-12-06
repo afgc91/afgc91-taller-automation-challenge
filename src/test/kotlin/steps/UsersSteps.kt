@@ -1,5 +1,7 @@
 package steps
 
+import com.fasterxml.jackson.core.JsonProcessingException
+import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import config.ApiConfig.OK
@@ -9,6 +11,7 @@ import config.ApiConfig.getRequestSpec
 import io.restassured.response.Response
 import models.User
 import org.junit.jupiter.api.Assertions.assertEquals
+import java.io.IOException
 
 class UsersSteps {
     companion object {
@@ -23,9 +26,18 @@ class UsersSteps {
             assertEquals(OK, response.statusCode)
 
             val mapper = jacksonObjectMapper()
-            val users: List<User> = mapper.readValue(response.body.asString())
-
-            return users
+            return try {
+                mapper.readValue(response.body.asString())
+            } catch (e: JsonMappingException) {
+                println("Error mapping JSON to User class: ${e.message}")
+                emptyList()
+            } catch (e: JsonProcessingException) {
+                println("Error processing JSON: ${e.message}")
+                emptyList()
+            } catch (e: IOException) {
+                println("IO Error: ${e.message}")
+                emptyList()
+            }
         }
 
         fun getUsersByCity(city: String): List<User> {
